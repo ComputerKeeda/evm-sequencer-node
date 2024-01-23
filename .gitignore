@@ -1,0 +1,7 @@
+/data
+provingKey.txt
+verificationKey.txt
+verificationKey.json
+.idea
+.DS_Store
+.env

@@ -1,0 +1,15 @@
+{
+  "chainInfo": {
+    "chainID": "aircosmic_2605-1107",
+    "key": "AccountName",
+    "moniker": "ChainName"
+  },
+  "daInfo": {
+    "daSelected": "Celestia",
+    "daWalletAddress": "0xaddress",
+    "daWalletKeypair": "0xaddress"
+  },
+  "sequencerInfo": {
+    "sequencerType": "Air Sequencer"
+  }
+}
