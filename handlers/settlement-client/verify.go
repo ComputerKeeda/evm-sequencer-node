@@ -10,7 +10,6 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"io"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -64,7 +63,6 @@ func VerifyBatch(batchNumber int, proofByte []byte, ldda *leveldb.DB, lds *level
 	if batchNumber > 1 {
 		fmt.Println("batchDetails.PreviousStateHash", batchDetails.PreviousStateHash)
 		fmt.Println("batchDetails.CurrentStateHash", batchDetails.CurrentStateHash)
-		os.Exit(0)
 	}
 
 	postVerifyBatchStruct := VerifyBatchPostStruct{

@@ -117,7 +117,7 @@ func DaCall(transactions []string, ethClient *ethclient.Client, ctx context.Cont
 		DAKey:             response.DaKeyHash,
 		DAClientName:      "celestia",
 		BatchNumber:       strconv.Itoa(batchNumber),
-		PreviousStateHash: daDecode.PreviousStateHash,
+		PreviousStateHash: daDecode.CurrentStateHash,
 		CurrentStateHash:  currentStateHash,
 	}
 
