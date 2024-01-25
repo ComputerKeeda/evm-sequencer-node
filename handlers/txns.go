@@ -77,17 +77,8 @@ func SaveTxns(client *ethclient.Client, ctx context.Context, ldt *leveldb.DB, tr
 		logs.Log.Error(fmt.Sprintf("Failed to fetch the transaction receipt: %v", err))
 		os.Exit(0)
 	}
-	// fmt.Println(tx)
-	// v, r, s :=
-	// v *big.Int, r *big.Int, s *big.Int
 
-	fmt.Println("Error testing")
 	var v, r, s = tx.RawSignatureValues()
-	fmt.Println("Error testing")
-
-	// if v == nil || r == nil || s == nil {
-	// 	log.Fatal("Transaction has an invalid signature")
-	// }
 
 	if tx.To() == nil {
 		// Contract creation
@@ -96,27 +87,27 @@ func SaveTxns(client *ethclient.Client, ctx context.Context, ldt *leveldb.DB, tr
 		fmt.Printf("Transaction to: %s\n", tx.To().Hex())
 	}
 
-	// fmt.Printf("BlockHash: %s\n", blockHash)
-	// fmt.Printf("BlockNumber: %d\n", blockNumberUint64)
-	// fmt.Printf("From: %s\n", msg.Hex())
-	// fmt.Printf("Gas: %s\n", evmcommon.ToString(tx.Gas()))
-	// fmt.Printf("GasPrice: %s\n", tx.GasPrice().String())
-	// fmt.Printf("Hash: %s\n", tx.Hash().Hex())
-	// fmt.Printf("Input: %s\n", string(tx.Data()))
-	// fmt.Printf("Nonce: %s\n", evmcommon.ToString(tx.Nonce()))
-	// fmt.Printf("R: %s\n", r.String())
-	// fmt.Printf("S: %s\n", s.String())
-	// fmt.Printf("To: %s\n", tx.To().Hex())
-	// fmt.Printf("TransactionIndex: %s\n", evmcommon.ToString(receipt.TransactionIndex))
-	// fmt.Printf("Type: %d\n", tx.Type())
-	// fmt.Printf("V: %s\n", v.String())
-	// fmt.Printf("Value: %s\n", tx.Value().String())
-
 	var toValue string
+	
+	// 
 
 	if tx.To() == nil {
 		// Contract creation
 		toValue = msg.Hex()
+		// fmt.Println("blockHash", blockHash)
+		// fmt.Println("blockNumberUint64", blockNumberUint64)
+		// fmt.Println("contract address", msg.Hex())
+		// fmt.Println("Gas", evmcommon.ToString(tx.Gas()))
+		// fmt.Println("GasPrice", tx.GasPrice().String())
+		// fmt.Println("Hash", tx.Hash().Hex())
+		// fmt.Println("Nonce", evmcommon.ToString(tx.Nonce()))
+		// fmt.Println("r", r.String())
+		// fmt.Println("s", s.String())
+		// fmt.Println("toValue", toValue)
+		// fmt.Println("TransactionIndex", evmcommon.ToString(receipt.TransactionIndex))
+		// fmt.Println(fmt.Sprintf("Type: %d", tx.Type()))
+		// fmt.Println("v", v.String())
+		// fmt.Println("Value", tx.Value().String())
 	} else {
 		toValue = tx.To().Hex()
 	}

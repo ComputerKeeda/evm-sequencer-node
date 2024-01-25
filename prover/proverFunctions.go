@@ -5,12 +5,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	air "github.com/airchains-network/evm-sequencer-node/airdb/air-leveldb"
-	"github.com/airchains-network/evm-sequencer-node/common"
-	"github.com/airchains-network/evm-sequencer-node/types"
 	"math/rand"
 	"os"
 	"time"
+
+	air "github.com/airchains-network/evm-sequencer-node/airdb/air-leveldb"
+	"github.com/airchains-network/evm-sequencer-node/common"
+	"github.com/airchains-network/evm-sequencer-node/types"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	tedwards "github.com/consensys/gnark-crypto/ecc/twistededwards"
@@ -94,7 +95,7 @@ func (circuit *MyCircuit) Define(api frontend.API) error {
 			fmt.Println("Error verifying signature")
 			return err
 		}
-		api.AssertIsLessOrEqual(circuit.FromBalances[i],circuit.Amount[i])
+		api.AssertIsLessOrEqual(circuit.Amount[i], circuit.FromBalances[i])
 
 		api.Sub(circuit.FromBalances[i], circuit.Amount[i])
 		api.Add(circuit.ToBalances[i], circuit.Amount[i])
@@ -140,7 +141,7 @@ func GenerateProof(inputData types.BatchStruct, batchNum int) (any, string, []by
 	}
 
 	currentStatusHash := GetMerkleRootSecond(transactions)
-
+	
 	if _, err := os.Stat("provingKey.txt"); os.IsNotExist(err) {
 		fmt.Println("Proving key does not exist. Please run the command 'sequencer-sdk create-vk-pk' to generate the proving key")
 		return nil, "", nil, err
@@ -215,17 +216,19 @@ func GenerateProof(inputData types.BatchStruct, batchNum int) (any, string, []by
 	}
 
 	for i := 0; i < common.BatchSize; i++ {
-		var amount string
+		// var amount string
 		if inputData.Amounts[i] > inputData.SenderBalances[i] {
-			amount = "0"
-		} else {
-			amount = inputData.Amounts[i]
+			fmt.Println("Amount value give below")
+			fmt.Println(inputData.Amounts[i])
+			fmt.Println("From balance value given below")
+			fmt.Println(inputData.SenderBalances[i])
+			os.Exit(90)
 		}
 		inputs.To[i] = frontend.Variable(inputData.To[i])
 		inputs.From[i] = frontend.Variable(inputData.From[i])
-		inputs.Amount[i] = frontend.Variable(amount)
+		inputs.Amount[i] = frontend.Variable(inputData.Amounts[i])
 		inputs.TransactionHash[i] = frontend.Variable(inputData.TransactionHash[i])
-		inputs.FromBalances[i] = frontend.Variable(amount)
+		inputs.FromBalances[i] = frontend.Variable(inputData.SenderBalances[i])
 		inputs.ToBalances[i] = frontend.Variable(inputData.ReceiverBalances[i])
 		// msg := []byte(inputData.Messages[i])
 		msg := make([]byte, len(snarkField.Bytes()))
@@ -247,11 +250,20 @@ func GenerateProof(inputData types.BatchStruct, batchNum int) (any, string, []by
 		inputs.Signatures[i].Assign(tedwards.BLS12_381, signature)
 	}
 
+	
 	witness, err := frontend.NewWitness(&inputs, ecc.BLS12_381.ScalarField())
 	if err != nil {
+		// fmt.Println(inputs.From)
+		// fmt.Println(inputs.To)
+		fmt.Println(inputs.Amount)
+		fmt.Println(inputs.FromBalances)
+		fmt.Println(inputs.ToBalances)
+
 		fmt.Printf("Error creating a witness: %v\n", err)
 		return nil, "", nil, err
 	}
+	// fmt.Println("Witness created")
+	// os.Exit(0)
 
 	witnessVector := witness.Vector()
 

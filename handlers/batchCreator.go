@@ -4,6 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/airchains-network/evm-sequencer-node/common"
 	"github.com/airchains-network/evm-sequencer-node/common/logs"
 	settlement_client "github.com/airchains-network/evm-sequencer-node/handlers/settlement-client"
@@ -11,15 +17,31 @@ import (
 	"github.com/airchains-network/evm-sequencer-node/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/syndtr/goleveldb/leveldb"
-	"os"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
-func BatchGeneration(wg *sync.WaitGroup, client *ethclient.Client, ctx context.Context, lds *leveldb.DB, ldt *leveldb.DB, ldbatch *leveldb.DB, ldda *leveldb.DB, batchStartIndex []byte) {
-	defer wg.Done()
+// ConvertEtherToWei converts a string representation of an Ether amount to a string representation of Wei.
+func ConvertEtherToWei(etherStr string) (string, error) {
+	// Parse the Ether amount
+	ether := new(big.Float)
+	_, ok := ether.SetString(etherStr)
+	if !ok {
+		return "", fmt.Errorf("invalid ether amount")
+	}
+
+	// Define the conversion factor (10^18)
+	weiMultiplier := new(big.Float).SetInt(big.NewInt(1e18))
+
+	// Multiply the Ether amount by the conversion factor to get Wei
+	wei := new(big.Float).Mul(ether, weiMultiplier)
+
+	// Convert the Wei amount to an integer
+	weiInt, _ := wei.Int(nil)
+
+	return weiInt.String(), nil
+}
+
+func BatchGeneration(client *ethclient.Client, ctx context.Context, lds *leveldb.DB, ldt *leveldb.DB, ldbatch *leveldb.DB, ldda *leveldb.DB, batchStartIndex []byte) {
+	// defer wg.Done()
 
 	limit, err := lds.Get([]byte("batchCount"), nil)
 	if err != nil {
@@ -56,15 +78,27 @@ func BatchGeneration(wg *sync.WaitGroup, client *ethclient.Client, ctx context.C
 			os.Exit(0)
 		}
 
-		senderBalancesCheck, err := common.GetBalance(tx.From, (tx.BlockNumber - 1))
+		senderBalanceInEtherCheck, err := common.GetBalance(tx.From, (tx.BlockNumber - 1))
 		if err != nil {
 			logs.Log.Error(fmt.Sprintf("Error in getting sender balance : %s", err.Error()))
 			os.Exit(0)
 		}
+		// convert senderbalance from ether to wei
+		senderBalancesCheck, err := ConvertEtherToWei(senderBalanceInEtherCheck)
+		if err != nil {
+			logs.Log.Error(fmt.Sprintf("Error in converting sender balance : %s", err.Error()))
+			os.Exit(0)
+		}
 
-		receiverBalancesCheck, err := common.GetBalance(tx.To, (tx.BlockNumber - 1))
+		receiverBalancesEtherCheck, err := common.GetBalance(tx.To, (tx.BlockNumber - 1))
 		if err != nil {
 			logs.Log.Error(fmt.Sprintf("Error in getting reciver balance : %s", err.Error()))
+			os.Exit(0)
+		}
+		// convert receiverbalance from ether to wei
+		receiverBalancesCheck, err := ConvertEtherToWei(receiverBalancesEtherCheck)
+		if err != nil {
+			logs.Log.Error(fmt.Sprintf("Error in converting receiver balance : %s", err.Error()))
 			os.Exit(0)
 		}
 
@@ -76,10 +110,15 @@ func BatchGeneration(wg *sync.WaitGroup, client *ethclient.Client, ctx context.C
 
 		From = append(From, tx.From)
 		To = append(To, tx.To)
-		Amounts = append(Amounts, tx.Value)
 		TransactionHash = append(TransactionHash, tx.Hash)
+
+		Amounts = append(Amounts, tx.Value)
 		SenderBalances = append(SenderBalances, senderBalancesCheck)
 		ReceiverBalances = append(ReceiverBalances, receiverBalancesCheck)
+
+		fmt.Println(senderBalancesCheck)
+		fmt.Println(receiverBalancesCheck)
+
 		Messages = append(Messages, tx.Input)
 		TransactionNonces = append(TransactionNonces, tx.Nonce)
 		AccountNonces = append(AccountNonces, accountNouceCheck)
@@ -106,12 +145,13 @@ func BatchGeneration(wg *sync.WaitGroup, client *ethclient.Client, ctx context.C
 		logs.Log.Error(fmt.Sprintf("Error in adding Da client : %s", err.Error()))
 		logs.Log.Warn("Trying again...")
 		time.Sleep(3 * time.Second)
-		BatchGeneration(wg, client, ctx, lds, ldt, ldbatch, ldda, []byte(strconv.Itoa(common.BatchSize*(limitInt+1))))
+		BatchGeneration(client, ctx, lds, ldt, ldbatch, ldda, []byte(strconv.Itoa(common.BatchSize*(limitInt+1))))
 	}
 
 	logs.Log.Warn(fmt.Sprintf("Successfully added Da client for Batch %s in the latest phase", daKeyHash))
 
-	addBatchRes := settlement_client.AddBatch(witnessVector, limitInt+1, lds)
+	currentTime := uint64(time.Now().Unix())
+	addBatchRes := settlement_client.AddBatch(witnessVector, limitInt+1, currentStatusHash, currentTime, lds, ldda)
 	if addBatchRes == "nil" {
 		logs.Log.Error(fmt.Sprintf("Error in adding batch to settlement client : %s", addBatchRes))
 		os.Exit(0)
@@ -157,5 +197,5 @@ func BatchGeneration(wg *sync.WaitGroup, client *ethclient.Client, ctx context.C
 
 	logs.Log.Warn(fmt.Sprintf("Successfully saved Batch %s in the latest phase", strconv.Itoa(limitInt+1)))
 
-	BatchGeneration(wg, client, ctx, lds, ldt, ldbatch, ldda, []byte(strconv.Itoa(common.BatchSize*(limitInt+1))))
+	BatchGeneration(client, ctx, lds, ldt, ldbatch, ldda, []byte(strconv.Itoa(common.BatchSize*(limitInt+1))))
 }

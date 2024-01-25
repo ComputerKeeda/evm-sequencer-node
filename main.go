@@ -111,11 +111,11 @@ func main() {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		handlers.BlockCheck(&wg, ctx, client, ldb, ldt)
+		handlers.BlockCheck(ctx, client, ldb, ldt)
 	}()
 	go func() {
 		defer wg.Done()
-		handlers.BatchGeneration(&wg, client, ctx, lds, ldt, ldbatch, ldda, batchStartIndex)
+		handlers.BatchGeneration(client, ctx, lds, ldt, ldbatch, ldda, batchStartIndex)
 	}()
 	wg.Wait()
 }

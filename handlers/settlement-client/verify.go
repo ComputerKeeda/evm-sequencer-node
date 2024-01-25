@@ -10,16 +10,24 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
 type VerifyBatchPostStruct struct {
-	BatchNumber    uint64 `json:"batch_number"`
-	ChainID        string `json:"chain_id"`
-	MerkleRootHash string `json:"merkle_root_hash"`
-	PrevMerkleRoot string `json:"prev_merkle_root"`
-	ZkProof        []byte `json:"zk_proof"`
+	StationId              string `json:"station_id"`
+	PodNumber              uint64 `json:"pod_number"`
+	MerkleRootHash         string `json:"merkle_root_hash"`
+	PreviousMerkleRootHash string `json:"previous_merkle_root_hash"`
+	ZkProof                []byte `json:"zk_proof"`
 }
+
+//	BatchNumber    uint64 `json:"batch_number"`
+//	ChainID        string `json:"chain_id"`
+//	MerkleRootHash string `json:"merkle_root_hash"`
+//	PrevMerkleRoot string `json:"prev_merkle_root"`
+//	ZkProof        []byte `json:"zk_proof"`
+//}
 
 func VerifyBatch(batchNumber int, proofByte []byte, ldda *leveldb.DB, lds *leveldb.DB) bool {
 	logs.Log.Warn("Verifying the batch ")
@@ -37,6 +45,8 @@ func VerifyBatch(batchNumber int, proofByte []byte, ldda *leveldb.DB, lds *level
 	}
 	chainID := settlementChainInfo.ChainId
 
+	fmt.Println(batchNumber)
+
 	batchKey := fmt.Sprintf("batch_%d", batchNumber)
 	batchDetailsByte, err := ldda.Get([]byte(batchKey), nil)
 	if err != nil {
@@ -51,12 +61,18 @@ func VerifyBatch(batchNumber int, proofByte []byte, ldda *leveldb.DB, lds *level
 		return false
 	}
 
+	if batchNumber > 1 {
+		fmt.Println("batchDetails.PreviousStateHash", batchDetails.PreviousStateHash)
+		fmt.Println("batchDetails.CurrentStateHash", batchDetails.CurrentStateHash)
+		os.Exit(0)
+	}
+
 	postVerifyBatchStruct := VerifyBatchPostStruct{
-		BatchNumber:    uint64(batchNumber),
-		ChainID:        chainID,
-		MerkleRootHash: batchDetails.CurrentStateHash,
-		PrevMerkleRoot: batchDetails.PreviousStateHash,
-		ZkProof:        proofByte,
+		StationId:              chainID,
+		PodNumber:              uint64(batchNumber),
+		MerkleRootHash:         batchDetails.CurrentStateHash,
+		PreviousMerkleRootHash: batchDetails.PreviousStateHash,
+		ZkProof:                proofByte,
 	}
 
 	jsonData, err := json.Marshal(postVerifyBatchStruct)
@@ -65,7 +81,7 @@ func VerifyBatch(batchNumber int, proofByte []byte, ldda *leveldb.DB, lds *level
 		return false
 	}
 
-	rpcUrl := fmt.Sprintf("%s/verify_batch", common.SettlementClientRPC)
+	rpcUrl := fmt.Sprintf("%s/verify-pod", common.SettlementClientRPC)
 
 	req, err := http.NewRequest("POST", rpcUrl, bytes.NewBuffer(jsonData))
 	if err != nil {

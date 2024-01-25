@@ -10,14 +10,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-func BlockCheck(wg *sync.WaitGroup, ctx context.Context, client *ethclient.Client, ldb *leveldb.DB, ldt *leveldb.DB) {
-	defer wg.Done()
+func BlockCheck( ctx context.Context, client *ethclient.Client, ldb *leveldb.DB, ldt *leveldb.DB) {
+	// defer wg.Done()
 
 	fileOpen, err := os.Open("data/blockCount.txt")
 	if err != nil {
@@ -50,7 +49,7 @@ func BlockCheck(wg *sync.WaitGroup, ctx context.Context, client *ethclient.Clien
 		time.Sleep(common.BlockDelay * time.Second)
 		logs.Log.Info("Block number is same as latest block number : " + strconv.Itoa(blockNumber))
 		logs.Log.Info("Waiting for " + strconv.Itoa(common.BlockDelay) + " seconds")
-		BlockCheck(wg, ctx, client, ldb, ldt)
+		BlockCheck(ctx, client, ldb, ldt)
 	} else {
 		BlockSave(client, ctx, blockNumber, ldb, ldt)
 	}
