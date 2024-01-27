@@ -71,9 +71,7 @@ func BlockSave(client *ethclient.Client, ctx context.Context, blockIndex int, ld
 	logs.Log.Info(infoMessage)
 
 	for i := 0; i < block.TransactionCount; i++ {
-		fmt.Println("Transaction number", i+1, "of block number", blockIndex)
 		SaveTxns(client, ctx, ldt, transactions[i].Hash().String(), blockIndex, block.Hash)
-		fmt.Println("code have stuck above probably")
 	}
 
 	err = os.WriteFile("data/blockCount.txt", []byte(strconv.Itoa(blockIndex+1)), 0666)
