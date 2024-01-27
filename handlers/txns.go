@@ -50,10 +50,21 @@ func SaveTxns(client *ethclient.Client, ctx context.Context, ldt *leveldb.DB, tr
 	}
 
 	txHash := common.HexToHash(transactionHash)
-	tx, isPending, err := client.TransactionByHash(ctx, txHash)
-	if err != nil {
-		logs.Log.Error(fmt.Sprintf("Failed to get transaction by hash: %s", err))
-		os.Exit(0)
+
+	fmt.Println("txHash", txHash)
+
+	var tx *types.Transaction
+	var isPending bool
+	for {
+		tx, isPending, err = client.TransactionByHash(ctx, txHash)
+		if err == nil {
+			break
+		} else {
+			logs.Log.Error(fmt.Sprintf("Failed to get transaction by hash: %s", err))
+			logs.Log.Error(fmt.Sprintf("Retrying in 2 seconds: %s", err))
+			time.Sleep(2 * time.Second)
+			continue
+		}
 	}
 
 	if isPending {
@@ -88,8 +99,8 @@ func SaveTxns(client *ethclient.Client, ctx context.Context, ldt *leveldb.DB, tr
 	}
 
 	var toValue string
-	
-	// 
+
+	//
 
 	if tx.To() == nil {
 		// Contract creation
