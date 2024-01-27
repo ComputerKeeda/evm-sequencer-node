@@ -60,8 +60,8 @@ func SaveTxns(client *ethclient.Client, ctx context.Context, ldt *leveldb.DB, tr
 		if err == nil {
 			break
 		} else {
-			logs.Log.Error(fmt.Sprintf("Failed to get transaction by hash: %s", err))
-			logs.Log.Error(fmt.Sprintf("Retrying in 2 seconds: %s", err))
+			logs.Log.Warn(fmt.Sprintf("Failed to get transaction by hash: %s", err))
+			logs.Log.Warn(fmt.Sprintf("Retrying in 2 seconds: %s", err))
 			time.Sleep(2 * time.Second)
 			continue
 		}
